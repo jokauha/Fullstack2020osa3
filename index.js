@@ -20,29 +20,6 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
     skip: (req, res) => req.method !== 'POST'
 }))
 
-/* let persons = [
-    {
-        name: "Arto Hellas",
-        number: "040-123456",
-        id: 1
-    },
-    {
-        name: "Ada Lovelace",
-        number: "39-44-5323523",
-        id: 2
-    },
-    {
-        name: "Dan Abramov",
-        number: "12-43-234345",
-        id: 3
-    },
-    {
-        name: "Mary Poppendieck",
-        number: "39-23-6423122",
-        id: 4
-    }
-] */
-
 app.get('/api/persons', (req, res, next) => {
     Person.find({})
         .then(people => {
@@ -57,15 +34,6 @@ app.get('/api/persons/:id', (req, res, next) => {
             res.json(person)
         })
         .catch(error => next(error))
-    
-    /*const id = Number(req.params.id)
-    const person = persons.find(person => person.id === id)
-
-    if (person) {
-        res.json(person)
-    } else {
-        res.status(404).end()
-    }*/
 })
 
 app.delete('/api/persons/:id', (req, res, next) => {
@@ -89,11 +57,6 @@ app.post('/api/persons', (req, res, next) => {
         e.name = 'NumberError'
         return next(e)
     }
-    /*else if (persons.find(person => person.name === body.name)) {
-        return res.status(400).json({
-            error: 'name must be unique'
-        })
-    }*/
     else {
         const person = new Person({
             name: body.name,
@@ -124,7 +87,7 @@ app.put('/api/persons/:id', (req, res, next) => {
         .catch(error => next(error))
 })
 
-app.get('/info', (req, res) => {
+app.get('/info', (req, res, next) => {
     Person.countDocuments()
         .then(result => {
             res.send(
@@ -132,6 +95,7 @@ app.get('/info', (req, res) => {
                 <p>${Date().toString()}</p>`
             )
         })
+        .catch(error => next(error))
 })
 
 const errorHandler = (error, request, response, next) => {
