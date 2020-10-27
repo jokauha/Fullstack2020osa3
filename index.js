@@ -109,6 +109,9 @@ const errorHandler = (error, request, response, next) => {
     else if (error.name === 'NumberError') {
         return response.status(400).send({ error: 'no number'}).end()
     }
+    else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
+    }
 
     next(error)
 }
