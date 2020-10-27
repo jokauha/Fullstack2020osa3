@@ -20,7 +20,7 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
     skip: (req, res) => req.method !== 'POST'
 }))
 
-let persons = [
+/* let persons = [
     {
         name: "Arto Hellas",
         number: "040-123456",
@@ -41,18 +41,22 @@ let persons = [
         number: "39-23-6423122",
         id: 4
     }
-]
+] */
 
-app.get('/api/persons', (req, res) => {
-    Person.find({}).then(people => {
-        res.json(people)
-    })
+app.get('/api/persons', (req, res, next) => {
+    Person.find({})
+        .then(people => {
+            res.json(people)
+        })
+        .catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (req, res) => {
-    Person.findById(req.params.id).then(person => {
-        res.json(person)
-    })
+app.get('/api/persons/:id', (req, res, next) => {
+    Person.findById(req.params.id)
+        .then(person => {
+            res.json(person)
+        })
+        .catch(error => next(error))
     
     /*const id = Number(req.params.id)
     const person = persons.find(person => person.id === id)
@@ -64,51 +68,73 @@ app.get('/api/persons/:id', (req, res) => {
     }*/
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/persons/:id', (req, res, next) => {
     Person.findByIdAndRemove(req.params.id)
         .then(result => {
             res.status(204).end()
         })
-        .catch(error => {
-            console.log(error)
-        })
+        .catch(error => next(error))
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
     const body = req.body
 
-    if (!body.name) {
-        return res.status(400).json({
-            error: 'name missing'
-        })
+    if (body.name === '') {
+        var e = new Error('Name missing')
+        e.name = 'NameError'
+        return next(e)
     }
-    else if (!body.number) {
-        return res.status(400).json({
-            error: 'number missing'
-        })
+    else if (body.number === '') {
+        var e = new Error('Number missing')
+        e.name = 'NumberError'
+        return next(e)
     }
     /*else if (persons.find(person => person.name === body.name)) {
         return res.status(400).json({
             error: 'name must be unique'
         })
     }*/
-
-    const person = new Person({
-        name: body.name,
-        number: body.number,
-    })
-
-    person.save().then(savedPerson => {
-        res.json(savedPerson)
-    })
+    else {
+        const person = new Person({
+            name: body.name,
+            number: body.number,
+        })
+    
+        person.save()
+            .then(savedPerson => {
+                res.json(savedPerson)
+            })
+            .catch(error => next(error))
+    }
+    
 })
 
 app.get('/info', (req, res) => {
-    res.send(
-        `<p>Phonebook has info for ${persons.length} people</p>
-        <p>${Date().toString()}</p>`
-    )
+    Person.countDocuments()
+        .then(result => {
+            res.send(
+                `<p>Phonebook has info for ${result} people</p>
+                <p>${Date().toString()}</p>`
+            )
+        })
 })
+
+const errorHandler = (error, request, response, next) => {
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+    else if (error.name === 'NameError') {
+        return response.status(400).send({ error: 'no name' })
+    }
+    else if (error.name === 'NumberError') {
+        return response.status(400).send({ error: 'no number'}).end()
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
